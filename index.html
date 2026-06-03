@@ -1,29 +1,583 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Development Apps</title>
+  <title>卓球ダブルス対戦表自動生成アプリ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0f1e;
+      --surface: #111827;
+      --card: #161f35;
+      --border: #1e2d4a;
+      --accent: #00d4ff;
+      --accent2: #ff6b35;
+      --text: #e8f0fe;
+      --muted: #7a8ba8;
+      --green: #00e5a0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Hero */
+    header {
+      padding: 80px 0 60px;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: rgba(0,212,255,0.1);
+      border: 1px solid rgba(0,212,255,0.3);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 900;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 8px 0 48px;
+    }
+
+    /* Version card */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Latest version highlight */
+    .latest-card {
+      background: linear-gradient(135deg, #0d1f3c 0%, #0a1628 100%);
+      border: 1px solid rgba(0,212,255,0.25);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .latest-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+    }
+
+    .version-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .ver-badge {
+      background: var(--accent);
+      color: #000;
+      font-weight: 900;
+      font-size: 13px;
+      padding: 4px 12px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+    .ver-badge.old {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .ver-title {
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .ver-date {
+      color: var(--muted);
+      font-size: 13px;
+      margin-left: auto;
+    }
+
+    .feature-tag {
+      display: inline-block;
+      background: rgba(0,229,160,0.1);
+      color: var(--green);
+      border: 1px solid rgba(0,229,160,0.25);
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    /* Platform sections */
+    .platforms {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 560px) {
+      .platforms { grid-template-columns: 1fr; }
+    }
+
+    .platform-block {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .platform-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 14px;
+    }
+
+    .platform-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .android-icon { background: rgba(100,200,100,0.15); }
+    .ios-icon { background: rgba(200,200,200,0.1); }
+
+    .dl-btn {
+      display: block;
+      width: 100%;
+      padding: 11px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-align: center;
+      transition: all 0.2s ease;
+      margin-bottom: 8px;
+    }
+
+    .dl-btn.primary {
+      background: var(--accent);
+      color: #000;
+    }
+    .dl-btn.primary:hover {
+      background: #33ddff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0,212,255,0.3);
+    }
+
+    .dl-btn.secondary {
+      background: rgba(255,255,255,0.05);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .dl-btn.secondary:hover {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+    }
+
+    .expo-note {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(255,107,53,0.05);
+      border-left: 2px solid var(--accent2);
+      border-radius: 0 6px 6px 0;
+    }
+    .expo-note strong {
+      color: var(--accent2);
+    }
+
+    /* Older version */
+    .older-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 32px;
+      margin-bottom: 48px;
+    }
+
+    /* Other apps */
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      margin-bottom: 80px;
+    }
+
+    .app-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app-card:hover {
+      border-color: rgba(0,212,255,0.3);
+      background: #1a2540;
+      transform: translateY(-2px);
+    }
+
+    .app-card:hover .app-arrow {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .app-dot {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,229,160,0.1));
+      border: 1px solid rgba(0,212,255,0.15);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .app-info { flex: 1; min-width: 0; }
+
+    .app-name {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .app-url {
+      font-size: 10px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .app-arrow {
+      color: var(--accent);
+      opacity: 0;
+      transform: translateX(-6px);
+      transition: all 0.2s ease;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+
+    /* Ping animation */
+    @keyframes ping {
+      0% { transform: scale(1); opacity: 1; }
+      80%, 100% { transform: scale(2); opacity: 0; }
+    }
+    .live-dot {
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      display: inline-block;
+      position: relative;
+    }
+    .live-dot::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--green);
+      border-radius: 50%;
+      animation: ping 1.5s ease-in-out infinite;
+    }
+
+    /* Fade in */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up {
+      animation: fadeUp 0.5s ease forwards;
+      opacity: 0;
+    }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+  </style>
 </head>
 <body>
-卓球ダブルス対戦表自動生成アプリ<br>
-<br>
-更新履歴<br>
-2026.06.01　Ver 3.0　登録メンバーのグループ化<br>
-2026.05.20　Ver 2.24<br>
-<br>
-ダウンロード方法<br>
-■ アンドロイド版<br>
-Ver 3.0 https://drive.google.com/file/d/1_ffB8pjdYykkbBI0wQwGdMiyoWHc1LDX/view?usp=sharing<br>
-Ver 2.24 https://drive.google.com/file/d/1wHOKU03fM-Q4SPbskjDK50RpKrEJLHwL/view?usp=sharing<br>
-■ iOS、iPadOS版<br>
-※ 前提として  Expo Go がインストール済みであること。Expo Goはアップルストアからダウンロードできます。 Versionは 54.0.2。<br>
-下記のURLを選択し、「Expo Go」で開くとアプリが起動します。<br>
+<div class="container">
 
-Ver 3.0<br>
-<a href="exp://u.expo.dev/2cd8704f-4a04-4669-9801-94fbab1ee2e2/group/0dafba85-aeae-4a1d-ba60-a790f440a2c1">exp://u.expo.dev/2cd8704f-4a04-4669-9801-94fbab1ee2e2/group/0dafba85-aeae-4a1d-ba60-a790f440a2c1</a>
-<br><br>
-Ver 2.24<br>
-<a href="exp://u.expo.dev/2cd8704f-4a04-4669-9801-94fbab1ee2e2/group/8a3ab276-1682-444f-b349-6838daf7ca12">exp://u.expo.dev/2cd8704f-4a04-4669-9801-94fbab1ee2e2/group/8a3ab276-1682-444f-b349-6838daf7ca12</a>
+  <!-- Header -->
+  <header class="fade-up">
+    <div class="hero-badge">🏓 Table Tennis App</div>
+    <h1>卓球ダブルス<br><span>対戦表自動生成</span>アプリ</h1>
+    <p class="hero-sub">メンバーを登録するだけで対戦表を自動作成</p>
+  </header>
+
+  <!-- Latest version -->
+  <section class="fade-up delay-1">
+    <div class="section-label"><span class="live-dot"></span>&nbsp;最新バージョン</div>
+
+    <div class="latest-card">
+      <div class="version-header">
+        <span class="ver-badge">Ver 3.0</span>
+        <span class="ver-title">最新リリース</span>
+        <span class="ver-date">2026.06.01</span>
+      </div>
+      <div class="feature-tag">✨ NEW：登録メンバーのグループ化に対応</div>
+
+      <div class="platforms">
+        <!-- Android -->
+        <div class="platform-block">
+          <div class="platform-name">
+            <div class="platform-icon android-icon">🤖</div>
+            Android
+          </div>
+          <a class="dl-btn primary"
+             href="https://drive.google.com/file/d/1_ffB8pjdYykkbBI0wQwGdMiyoWHc1LDX/view?usp=sharing"
+             target="_blank" rel="noopener">
+            ⬇ APKをダウンロード
+          </a>
+        </div>
+
+        <!-- iOS -->
+        <div class="platform-block">
+          <div class="platform-name">
+            <div class="platform-icon ios-icon">🍎</div>
+            iOS / iPadOS
+          </div>
+          <a class="dl-btn primary"
+             href="exp://u.expo.dev/2cd8704f-4a04-4669-9801-94fbab1ee2e2/group/0dafba85-aeae-4a1d-ba60-a790f440a2c1"
+             target="_blank" rel="noopener">
+            Expo Go で開く
+          </a>
+          <div class="expo-note">
+            <strong>事前準備：</strong>App Store から <strong>Expo Go（v54.0.2）</strong> をインストールしてください。上のボタンを選択し「Expo Go」で開くとアプリが起動します。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Previous version -->
+  <section class="fade-up delay-2">
+    <div class="section-label">旧バージョン</div>
+
+    <div class="older-card">
+      <div class="version-header">
+        <span class="ver-badge old">Ver 2.24</span>
+        <span class="ver-title" style="color:var(--muted)">前バージョン</span>
+        <span class="ver-date">2026.05.20</span>
+      </div>
+
+      <div class="platforms">
+        <div class="platform-block">
+          <div class="platform-name">
+            <div class="platform-icon android-icon">🤖</div>
+            Android
+          </div>
+          <a class="dl-btn secondary"
+             href="https://drive.google.com/file/d/1wHOKU03fM-Q4SPbskjDK50RpKrEJLHwL/view?usp=sharing"
+             target="_blank" rel="noopener">
+            ⬇ APKをダウンロード
+          </a>
+        </div>
+        <div class="platform-block">
+          <div class="platform-name">
+            <div class="platform-icon ios-icon">🍎</div>
+            iOS / iPadOS
+          </div>
+          <a class="dl-btn secondary"
+             href="exp://u.expo.dev/2cd8704f-4a04-4669-9801-94fbab1ee2e2/group/8a3ab276-1682-444f-b349-6838daf7ca12"
+             target="_blank" rel="noopener">
+            Expo Go で開く
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Other apps -->
+  <section class="fade-up delay-3">
+    <div class="section-label">その他のアプリ</div>
+
+    <div class="apps-grid">
+      <a class="app-card"
+         href="exp://u.expo.dev/151420ca-ab0c-4c56-af33-f15487b7ead3/group/2000d60b-fc9b-4054-af7e-60784bbf7c24"
+         target="_blank" rel="noopener">
+        <div class="app-dot">📍</div>
+        <div class="app-info">
+          <div class="app-name">GPS</div>
+          <div class="app-url">exp://u.expo.dev/151420ca…</div>
+        </div>
+        <div class="app-arrow">→</div>
+      </a>
+
+      <a class="app-card"
+         href="exp://u.expo.dev/a0383b4e-2e4b-45c9-bb40-7722ed4a3e7f/group/181e8aaf-1d47-4110-b4d2-ded9514e90bb"
+         target="_blank" rel="noopener">
+        <div class="app-dot">🌸</div>
+        <div class="app-info">
+          <div class="app-name">Kamifubuki</div>
+          <div class="app-url">exp://u.expo.dev/a0383b4e…</div>
+        </div>
+        <div class="app-arrow">→</div>
+      </a>
+
+      <a class="app-card"
+         href="exp://u.expo.dev/49318f07-ba3f-4509-b850-d857b0a02589/group/118fe446-e2e3-4ea5-b644-3af3ac433bec"
+         target="_blank" rel="noopener">
+        <div class="app-dot">💬</div>
+        <div class="app-info">
+          <div class="app-name">LanChat Client</div>
+          <div class="app-url">exp://u.expo.dev/49318f07…</div>
+        </div>
+        <div class="app-arrow">→</div>
+      </a>
+
+      <a class="app-card"
+         href="exp://u.expo.dev/713e6f64-e710-4ec3-8511-1c5cdd56c7d9/group/36975fe5-721f-43aa-97e3-2074835a3521"
+         target="_blank" rel="noopener">
+        <div class="app-dot">🔔</div>
+        <div class="app-info">
+          <div class="app-name">Local Notification</div>
+          <div class="app-url">exp://u.expo.dev/713e6f64…</div>
+        </div>
+        <div class="app-arrow">→</div>
+      </a>
+
+      <a class="app-card"
+         href="exp://u.expo.dev/b432f409-34cd-4963-a093-3b6167badfba/group/5d7863d9-2fb9-45f1-ad6e-1ba4ab45101a"
+         target="_blank" rel="noopener">
+        <div class="app-dot">🎬</div>
+        <div class="app-info">
+          <div class="app-name">Movie</div>
+          <div class="app-url">exp://u.expo.dev/b432f409…</div>
+        </div>
+        <div class="app-arrow">→</div>
+      </a>
+
+      <a class="app-card"
+         href="exp://u.expo.dev/a5e170a4-9c5c-4d10-a232-00d15e94e950/group/c7e2ec14-f0f6-4102-9f99-1036d2975ddc"
+         target="_blank" rel="noopener">
+        <div class="app-dot">🌤</div>
+        <div class="app-info">
+          <div class="app-name">News and Weather</div>
+          <div class="app-url">exp://u.expo.dev/a5e170a4…</div>
+        </div>
+        <div class="app-arrow">→</div>
+      </a>
+
+      <a class="app-card"
+         href="exp://u.expo.dev/ef918a3a-337e-46ed-8464-1d89f5dcb48f/group/15339193-72d4-45bd-8923-100f8082bd35"
+         target="_blank" rel="noopener">
+        <div class="app-dot">📡</div>
+        <div class="app-info">
+          <div class="app-name">Push Test</div>
+          <div class="app-url">exp://u.expo.dev/ef918a3a…</div>
+        </div>
+        <div class="app-arrow">→</div>
+      </a>
+    </div>
+  </section>
+
+  <footer class="fade-up delay-4">
+    Powered by Expo Go &nbsp;·&nbsp; 2026
+  </footer>
+
+</div>
 </body>
 </html>
